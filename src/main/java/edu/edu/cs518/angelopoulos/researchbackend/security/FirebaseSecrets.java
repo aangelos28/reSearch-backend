@@ -3,6 +3,8 @@ package edu.edu.cs518.angelopoulos.researchbackend.security;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -33,6 +35,13 @@ public class FirebaseSecrets {
     @Getter
     private static String credentials;
 
+    static Logger logger = LoggerFactory.getLogger(FirebaseSecrets.class);
+
+    // Class should not be constructed
+    private FirebaseSecrets() {
+
+    }
+
     /**
      * Read Firebase service account credentials from a JSON file.
      * The file must be in the classpath (for example under resources/). This function must be called
@@ -56,7 +65,7 @@ public class FirebaseSecrets {
             issuerUri = firebaseSecretsJson.get("issuer_uri").textValue();
             credentials = firebaseSecretsJson.get("credentials").toString();
         } catch (IOException e) {
-            System.err.println("Fatal Error: Could not find firebase.json.");
+            logger.error("Fatal: Could not find firebase.json");
             e.printStackTrace();
         }
     }

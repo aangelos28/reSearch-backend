@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Request filter that authorizes requests by validating the Firebase Bearer ID token.
@@ -31,6 +32,12 @@ import java.util.List;
 public class FirebaseIdTokenFilter extends OncePerRequestFilter implements Filter {
 
     private FirebaseClaimService firebaseClaimService;
+
+    private static class EmailUnverifiedException extends Exception {
+        public EmailUnverifiedException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
@@ -41,6 +48,8 @@ public class FirebaseIdTokenFilter extends OncePerRequestFilter implements Filte
         if (firebaseClaimService == null) {
             ServletContext servletContext = request.getServletContext();
             WebApplicationContext webApplicationContext = WebApplicationContextUtils.getWebApplicationContext(servletContext);
+
+            assert webApplicationContext != null;
             firebaseClaimService = webApplicationContext.getBean(FirebaseClaimService.class);
         }
 
@@ -83,7 +92,7 @@ public class FirebaseIdTokenFilter extends OncePerRequestFilter implements Filte
      * @return FirebaseToken object if the token is verified.
      * @throws Exception If the token cannot be verified.
      */
-    private static FirebaseToken authenticateFirebaseToken(String authToken) throws Exception {
+    private static FirebaseToken authenticateFirebaseToken(String authToken) throws ExecutionException, InterruptedException {
         ApiFuture<FirebaseToken> app = FirebaseAuth.getInstance().verifyIdTokenAsync(authToken);
         return app.get();
     }
@@ -96,13 +105,13 @@ public class FirebaseIdTokenFilter extends OncePerRequestFilter implements Filte
      * @return Spring Authentication object with authorities
      * @throws Exception If the token cannot be verified
      */
-    private Authentication validateBearerAndGetAuthentication(String authToken) throws Exception {
+    private Authentication validateBearerAndGetAuthentication(String authToken) throws ExecutionException, InterruptedException, EmailUnverifiedException {
         Authentication authentication;
 
         FirebaseToken idToken = authenticateFirebaseToken(authToken);
 
         if (!firebaseClaimService.userEmailVerified(idToken)) {
-            throw new Exception("User email not verified.");
+            throw new EmailUnverifiedException("User email not verified.");
         }
 
         // User is valid. Get their roles as Spring authorities.

@@ -66,8 +66,6 @@ public class UserService {
      * @param userFirebaseId Firebase id of the user profile to delete
      */
     public void deleteUserByFirebaseId(final String userFirebaseId) {
-        final User user = users.findByFirebaseId(userFirebaseId);
-
         users.deleteByFirebaseId(userFirebaseId);
     }
 }

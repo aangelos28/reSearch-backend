@@ -1,9 +1,10 @@
 package edu.edu.cs518.angelopoulos.researchbackend.controllers;
 
-import com.google.api.services.storage.Storage;
 import com.google.firebase.auth.FirebaseToken;
 import edu.edu.cs518.angelopoulos.researchbackend.services.FirebaseAuthService;
 import edu.edu.cs518.angelopoulos.researchbackend.services.UserService;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +45,10 @@ public class UserController {
 
     //////////////////////////////////////////////////////////////////////////////////////////
 
+    @RequiredArgsConstructor
+    @Getter
     public static class CreateUserRequest {
-        public String fullName;
+        private final String fullName;
     }
 
     /**
@@ -68,7 +71,7 @@ public class UserController {
 
         // Create the user profile
         userService.createUserWithFirebaseId(userId, fullName);
-        logger.info(String.format("Created user profile with firebase id %s", userId));
+        logger.info("Created user profile with firebase id {}", userId);
 
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -76,7 +79,7 @@ public class UserController {
     //////////////////////////////////////////////////////////////////////////////////////////
 
     public static class UpdateUserRequest {
-        public String fullName;
+        private String fullName;
     }
 
     /**
@@ -89,7 +92,7 @@ public class UserController {
         final String userId = firebaseAuthService.getUserIdToken().getUid();
 
         userService.updateUserWithFirebaseId(userId, requestBody.fullName);
-        logger.info(String.format("Updated user profile with firebase id %s", userId));
+        logger.info("Updated user profile with firebase id {}", userId);
 
         return ResponseEntity.ok().build();
     }
