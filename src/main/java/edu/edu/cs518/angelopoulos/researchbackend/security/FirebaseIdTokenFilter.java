@@ -56,7 +56,7 @@ public class FirebaseIdTokenFilter extends OncePerRequestFilter implements Filte
         String idToken = resolveToken(request);
 
         if (Strings.isNullOrEmpty(idToken)) {
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
@@ -65,6 +65,7 @@ public class FirebaseIdTokenFilter extends OncePerRequestFilter implements Filte
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (Exception ex) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
         }
 
         filterChain.doFilter(request, response);
@@ -111,7 +112,8 @@ public class FirebaseIdTokenFilter extends OncePerRequestFilter implements Filte
         FirebaseToken idToken = authenticateFirebaseToken(authToken);
 
         if (!firebaseClaimService.userEmailVerified(idToken)) {
-            throw new EmailUnverifiedException("User email not verified.");
+            throw new EmailUnverifiedException("User email is not verified");
+            //return null;
         }
 
         // User is valid. Get their roles as Spring authorities.

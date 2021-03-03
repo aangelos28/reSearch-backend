@@ -1,10 +1,9 @@
 package edu.edu.cs518.angelopoulos.researchbackend.controllers;
 
 import com.google.firebase.auth.FirebaseToken;
+import edu.edu.cs518.angelopoulos.researchbackend.models.User;
 import edu.edu.cs518.angelopoulos.researchbackend.services.FirebaseAuthService;
 import edu.edu.cs518.angelopoulos.researchbackend.services.UserService;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +27,6 @@ public class UserController {
         this.firebaseAuthService = firebaseAuthService;
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * Checks if a user profile exists.
      *
@@ -43,12 +40,11 @@ public class UserController {
         return userService.checkUserExistsByFirebaseId(userId);
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-    @RequiredArgsConstructor
-    @Getter
-    public static class CreateUserRequest {
-        private final String fullName;
+    /**
+     * DTO for transferring user data.
+     */
+    public static class UserData {
+        public String fullName;
     }
 
     /**
@@ -58,7 +54,7 @@ public class UserController {
      * @param requestBody Request with additional user profile info
      */
     @PostMapping(path = "/private/user/create")
-    public ResponseEntity<String> createUser(@RequestBody CreateUserRequest requestBody) {
+    public ResponseEntity<String> createUser(@RequestBody UserData requestBody) {
         final FirebaseToken userIdToken = firebaseAuthService.getUserIdToken();
         final String userId = userIdToken.getUid();
 
@@ -76,19 +72,13 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-    public static class UpdateUserRequest {
-        private String fullName;
-    }
-
     /**
      * Updates the information of a user profile.
      *
      * @param requestBody Request with new user info
      */
     @PutMapping(path = "/private/user/update")
-    public ResponseEntity<String> updateUser(@RequestBody UpdateUserRequest requestBody) {
+    public ResponseEntity<String> updateUser(@RequestBody UserData requestBody) {
         final String userId = firebaseAuthService.getUserIdToken().getUid();
 
         userService.updateUserWithFirebaseId(userId, requestBody.fullName);
@@ -97,5 +87,22 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////
+    /**
+     * Gets the information of the user identified by the Firebase id token in the request.
+     *
+     * @return User data
+     */
+    @GetMapping(path = "/private/user/get")
+    public ResponseEntity<UserData> getUser() {
+        final String userId = firebaseAuthService.getUserIdToken().getUid();
+
+        // Get user
+        final User user = userService.getUserByFirebaseId(userId);
+
+        // Create DTO
+        final UserData userData = new UserData();
+        userData.fullName = user.getFullName();
+
+        return ResponseEntity.ok(userData);
+    }
 }
