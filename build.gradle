@@ -1,38 +1,23 @@
 plugins {
-    id 'org.springframework.boot' version '2.4.3'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-    id 'java'
-    id "org.sonarqube" version "3.0"
+    id "io.spring.dependency-management" version "1.0.8.RELEASE"
 }
 
-group = 'edu.edu.cs518.angelopoulos'
-version = '0.0.1'
-sourceCompatibility = '11'
+subprojects {
 
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
+    group = 'edu.edu.cs518.angelopoulos.research'
+    version = '0.0.1-SNAPSHOT'
+
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'java-library'
+
+    repositories {
+        jcenter()
     }
-}
 
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.security:spring-security-config'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'com.google.firebase:firebase-admin:6.15.0'
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'mysql:mysql-connector-java'
-    annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.springframework.security:spring-security-test'
-}
-
-test {
-    useJUnitPlatform()
+    dependencyManagement {
+        imports {
+            mavenBom("org.springframework.boot:spring-boot-dependencies:2.1.7.RELEASE")
+        }
+    }
 }

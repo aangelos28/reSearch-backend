@@ -1,0 +1,38 @@
+plugins {
+    id 'org.springframework.boot' version '2.4.3'
+    id 'java'
+    id "org.sonarqube" version "3.0"
+}
+
+group = 'edu.edu.cs518.angelopoulos.research.backend'
+version = '0.0.1'
+sourceCompatibility = '11'
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-config'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.google.firebase:firebase-admin:6.15.0'
+    implementation project(':common')
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'mysql:mysql-connector-java'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+}
+
+test {
+    useJUnitPlatform()
+}

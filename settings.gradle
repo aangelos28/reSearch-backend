@@ -1,1 +1,5 @@
-rootProject.name = 'research-backend'
+rootProject.name = 'researchbackend'
+
+include 'backend'
+include 'cli'
+include 'common'

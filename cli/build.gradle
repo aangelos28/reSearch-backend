@@ -1,0 +1,21 @@
+plugins {
+    id 'org.springframework.boot' version '2.4.3'
+    id 'java'
+}
+
+group = 'edu.edu.cs518.angelopoulos.research.cli'
+version = '0.0.1'
+sourceCompatibility = '11'
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.shell:spring-shell-starter:2.0.0.RELEASE'
+    implementation 'com.google.firebase:firebase-admin:6.15.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.11.1'
+    implementation project(':common')
+}
