@@ -33,5 +33,4 @@ public class ResearchBackendApplication {
 
         SpringApplication.run(ResearchBackendApplication.class, args);
     }
-
 }
