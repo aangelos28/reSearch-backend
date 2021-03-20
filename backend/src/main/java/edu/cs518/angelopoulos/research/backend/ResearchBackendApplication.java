@@ -7,6 +7,7 @@ import edu.cs518.angelopoulos.research.backend.security.FirebaseSecrets;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.ComponentScan;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 
 @SpringBootApplication
 @EntityScan(basePackages = {"edu.cs518.angelopoulos.research.backend.models", "edu.cs518.angelopoulos.research.common.models"})
+@ComponentScan(basePackages = {"edu.cs518.angelopoulos.research.backend.repositories"})
 public class ResearchBackendApplication {
 
     public static void main(String[] args) {
