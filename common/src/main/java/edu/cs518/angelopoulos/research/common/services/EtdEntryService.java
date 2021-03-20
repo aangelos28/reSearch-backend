@@ -8,27 +8,71 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Optional;
 
 @Service
 public class EtdEntryService {
-    private EtdEntryRepository etdEntries;
+    private final EtdEntryRepository etdEntries;
 
-    private String etdDocumentStore;
+    private final String etdDocumentStore;
 
     Logger logger = LoggerFactory.getLogger(EtdEntryService.class);
+
+    public static class EtdEntryNotFoundException extends Exception {
+        public EtdEntryNotFoundException(String errorMessage) {
+            super(errorMessage);
+        }
+    }
+
+    public static class EtdDocumentResult {
+        public InputStreamResource resource;
+        public File file;
+    }
 
     @Autowired
     public EtdEntryService(EtdEntryRepository etdEntries, @Value("${data.etd.documentstore}") String etdDocumentStore) {
         this.etdEntries = etdEntries;
         this.etdDocumentStore = etdDocumentStore;
+    }
+
+    /**
+     * Get the first ETD document data belonging to an ETD entry.
+     * @param etdEntryId Id of the ETD entry
+     * @return InputStreamResource for the ETD document
+     * @throws EtdEntryNotFoundException If ETD entry with the specified ID is not found
+     * @throws FileNotFoundException If no ETD document is found
+     */
+    public EtdDocumentResult getEtdDocument(Long etdEntryId) throws EtdEntryNotFoundException, FileNotFoundException {
+        Optional<EtdEntry> etdEntryOptional = etdEntries.findById(etdEntryId);
+        EtdEntry etdEntry = null;
+
+        if (etdEntryOptional.isPresent()) {
+            etdEntry = etdEntryOptional.get();
+        } else {
+            throw new EtdEntryNotFoundException("Could not locate ETD entry with id " + etdEntryId);
+        }
+
+        EtdDocument etdDocument = etdEntry.getDocuments().get(0);
+
+        Path etdDocumentPath = getEtdDocumentPath(etdEntry, etdDocument);
+        File etdDocumentFile = new File(String.valueOf(etdDocumentPath));
+
+        EtdDocumentResult result = new EtdDocumentResult();
+        result.resource = new InputStreamResource(new FileInputStream(etdDocumentFile));
+        result.file = etdDocumentFile;
+
+        return result;
     }
 
     public EtdEntry insertEtdEntryFromDisk(EtdEntryMeta etdEntryMeta, File[] pdfFiles) {
@@ -61,6 +105,10 @@ public class EtdEntryService {
 
     private Path getOriginalEtdEntryPath(EtdEntryMeta etdEntryMeta) {
         return Paths.get(etdDocumentStore + "/" + etdEntryMeta.getOriginalId());
+    }
+
+    private Path getEtdDocumentPath(EtdEntry etdEntry, EtdDocument etdDocument) {
+        return Paths.get(etdDocumentStore + "/" + etdEntry.getId() + "/" + etdDocument.getFilename());
     }
 
     private void mapEtdEntryDirectory(EtdEntryMeta etdEntryMeta, EtdEntry etdEntry) throws IOException {

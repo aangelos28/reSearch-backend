@@ -1,6 +1,7 @@
 package edu.cs518.angelopoulos.research.backend.config;
 
 import edu.cs518.angelopoulos.research.backend.security.FirebaseIdTokenFilter;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -11,27 +12,28 @@ import javax.servlet.Filter;
 /**
  * Security configuration for endpoint authorization.
  */
+@Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     /**
      * Configuration for authorizing endpoints.
      *
-     * @param http HttpSecurity object
+     * @param httpSecurity HttpSecurity object
      * @throws Exception
      */
     @Override
-    public void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests()
-                .mvcMatchers("/public/*").permitAll()
-                .mvcMatchers("/private/*").authenticated()
-                .mvcMatchers("/private-admin/*").hasAuthority("admin")
-                .and()
-                .cors()
+    public void configure(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity
+                .authorizeRequests()
+                .antMatchers("/private/**").authenticated()
+                .antMatchers("/private-admin/**").hasAuthority("admin")
                 .and()
                 .addFilterBefore(firebaseIdTokenFilterBean(), (Class<? extends Filter>) UsernamePasswordAuthenticationFilter.class);
 
-        // Disable CSRF
-        http.csrf().disable();
+        httpSecurity
+                .cors()
+                .and()
+                .csrf().disable();
     }
 
     /**
