@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.cs518.angelopoulos.research.common.models.EtdEntryMeta;
 import edu.cs518.angelopoulos.research.common.models.EtdEntry;
-import edu.cs518.angelopoulos.research.common.repositories.ElasticEtdEntryRepository;
+import edu.cs518.angelopoulos.research.common.repositories.EtdEntryMetaRepository;
 import edu.cs518.angelopoulos.research.common.services.EtdEntryService;
 import org.apache.commons.io.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,17 +15,16 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 @Service
 public class EtdInserterService {
     private EtdEntryService etdEntryService;
-    private ElasticEtdEntryRepository elasticEtdEntries;
+    private EtdEntryMetaRepository elasticEtdEntries;
 
     private String etdDocumentStore;
 
     @Autowired
-    public EtdInserterService(EtdEntryService etdEntryService, ElasticEtdEntryRepository elasticEtdEntries,
+    public EtdInserterService(EtdEntryService etdEntryService, EtdEntryMetaRepository elasticEtdEntries,
                               @Value("${data.etd.documentstore}") String etdDocumentStore) {
         this.etdEntryService = etdEntryService;
         this.elasticEtdEntries = elasticEtdEntries;
