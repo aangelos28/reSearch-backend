@@ -3,12 +3,18 @@ package edu.cs518.angelopoulos.research.common.services;
 import edu.cs518.angelopoulos.research.common.models.EtdEntryMeta;
 import edu.cs518.angelopoulos.research.common.models.EtdDocument;
 import edu.cs518.angelopoulos.research.common.models.EtdEntry;
+import edu.cs518.angelopoulos.research.common.models.EtdEntryMetaSearchQuery;
+import edu.cs518.angelopoulos.research.common.repositories.EtdEntryMetaRepository;
 import edu.cs518.angelopoulos.research.common.repositories.EtdEntryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.core.SearchPage;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -24,6 +30,7 @@ import java.util.Optional;
 @Service
 public class EtdEntryService {
     private final EtdEntryRepository etdEntries;
+    private final EtdEntryMetaRepository etdEntryMetaRepository;
 
     private final String etdDocumentStore;
 
@@ -41,13 +48,63 @@ public class EtdEntryService {
     }
 
     @Autowired
-    public EtdEntryService(EtdEntryRepository etdEntries, @Value("${data.etd.documentstore}") String etdDocumentStore) {
+    public EtdEntryService(EtdEntryRepository etdEntries, EtdEntryMetaRepository etdEntryMetaRepository,
+                           @Value("${data.etd.documentstore}") String etdDocumentStore) {
         this.etdEntries = etdEntries;
+        this.etdEntryMetaRepository = etdEntryMetaRepository;
         this.etdDocumentStore = etdDocumentStore;
     }
 
     /**
+     * Search an ETD entry by title. Pages the results.
+     *
+     * @param title Title to search for
+     * @param page Index of the page to return
+     * @param pageSize Size of the page to return
+     * @return Page of EtdEntryMeta results that match the given title
+     */
+    public Page<EtdEntryMeta> findByTitle(String title, Integer page, Integer pageSize) {
+        Pageable pageable = PageRequest.of(page, pageSize);
+        return this.etdEntryMetaRepository.findByTitle(title, pageable);
+    }
+
+    /**
+     * Perform an advanced search with multiple fields to find EtdEntryMetas.
+     * Pages the results.
+     *
+     * @param query Object containing the query information
+     * @param page Index of the page to return
+     * @param pageSize Size of the page to return
+     * @return Page of EtdEntryMeta results that matched the given query data
+     */
+    public SearchPage<EtdEntryMeta> advancedSearch(EtdEntryMetaSearchQuery query, Integer page, Integer pageSize) {
+        Pageable pageable = PageRequest.of(page, pageSize);
+        return this.etdEntryMetaRepository.advancedSearch(query, pageable);
+    }
+
+    /**
+     * Get ETD entry metadata with the specified id
+     *
+     * @param entryId Id of the ETD entry
+     * @return EtdEntryMeta metadata for ETD entry
+     * @throws EtdEntryService.EtdEntryNotFoundException If ETD entry with the specified ID is not found
+     */
+    public EtdEntryMeta getEtdEntryMeta(Long entryId) throws EtdEntryService.EtdEntryNotFoundException {
+        Optional<EtdEntryMeta> etdEntryMetaOptional = etdEntryMetaRepository.findById(entryId);
+        EtdEntryMeta etdEntryMeta;
+
+        if (etdEntryMetaOptional.isPresent()) {
+            etdEntryMeta = etdEntryMetaOptional.get();
+        } else {
+            throw new EtdEntryService.EtdEntryNotFoundException("Could not locate ETD meta entry with id " + entryId);
+        }
+
+        return etdEntryMeta;
+    }
+
+    /**
      * Get the first ETD document data belonging to an ETD entry.
+     *
      * @param etdEntryId Id of the ETD entry
      * @return InputStreamResource for the ETD document
      * @throws EtdEntryNotFoundException If ETD entry with the specified ID is not found
@@ -55,7 +112,7 @@ public class EtdEntryService {
      */
     public EtdDocumentResult getEtdDocument(Long etdEntryId) throws EtdEntryNotFoundException, FileNotFoundException {
         Optional<EtdEntry> etdEntryOptional = etdEntries.findById(etdEntryId);
-        EtdEntry etdEntry = null;
+        EtdEntry etdEntry;
 
         if (etdEntryOptional.isPresent()) {
             etdEntry = etdEntryOptional.get();
@@ -75,6 +132,13 @@ public class EtdEntryService {
         return result;
     }
 
+    /**
+     * Inserts an ETD entry from the disk to the database.
+     *
+     * @param etdEntryMeta EtdEntryMeta object containing the metadata of the EtdEntry
+     * @param pdfFiles Array of PDF file handles
+     * @return EtdEntry object that was inserted in the database
+     */
     public EtdEntry insertEtdEntryFromDisk(EtdEntryMeta etdEntryMeta, File[] pdfFiles) {
         EtdEntry etdEntry = new EtdEntry();
         etdEntry.setOriginalId(etdEntryMeta.getOriginalId());

@@ -20,7 +20,6 @@ public class EtdEntryMeta {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    //private UUID id;
 
     // Handle
     @Field(type = FieldType.Long)

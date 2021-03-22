@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface EtdEntryMetaRepository extends ElasticsearchRepository<EtdEntryMeta, Long> {
+public interface EtdEntryMetaRepository extends ElasticsearchRepository<EtdEntryMeta, Long>, EtdEntryMetaRepositoryCustom {
     @NonNull
     Optional<EtdEntryMeta> findById(@NonNull Long id);
 
