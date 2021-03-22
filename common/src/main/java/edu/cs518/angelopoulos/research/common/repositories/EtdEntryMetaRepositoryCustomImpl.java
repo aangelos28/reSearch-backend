@@ -38,6 +38,9 @@ public class EtdEntryMetaRepositoryCustomImpl implements EtdEntryMetaRepositoryC
         if (query.getTitle() != null) {
             matchAllQuery.must(QueryBuilders.matchQuery("title", query.getTitle()));
         }
+        if (query.getType() != null) {
+            matchAllQuery.must(QueryBuilders.matchQuery("type", query.getType()));
+        }
         if (query.getSubject() != null) {
             matchAllQuery.must(QueryBuilders.matchQuery("subject", query.getSubject()));
         }

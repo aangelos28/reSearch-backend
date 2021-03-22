@@ -85,13 +85,14 @@ public class EtdController {
     @GetMapping(path = "/public/etd/search-advanced")
     public ResponseEntity<EtdEntryMetaSearchResponse> searchEtdEntryAdvanced(
             @RequestParam(name = "t", required = false) String title,
+            @RequestParam(name = "tp", required = false) String type,
             @RequestParam(name = "s", required = false) String subject,
             @RequestParam(name = "a", required = false) String author,
             @RequestParam(name = "d", required = false) String department,
             @RequestParam(name = "dg", required = false) String degreeGrantor,
             @RequestParam(name = "pb", required = false) String publisher,
             @RequestParam(name = "p") Integer pageNumber) {
-        EtdEntryMetaSearchQuery query = new EtdEntryMetaSearchQuery(title, subject, author, department, degreeGrantor, publisher);
+        EtdEntryMetaSearchQuery query = new EtdEntryMetaSearchQuery(title, type, subject, author, department, degreeGrantor, publisher);
 
         SearchPage<EtdEntryMeta> etdEntryMetaPage = etdEntryService.advancedSearch(query, pageNumber, PAGE_SIZE);
 

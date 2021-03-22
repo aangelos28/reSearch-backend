@@ -12,6 +12,9 @@ public class EtdEntryMetaSearchQuery {
     private String title;
 
     @Getter @Setter
+    private String type;
+
+    @Getter @Setter
     private String subject;
 
     @Getter @Setter
