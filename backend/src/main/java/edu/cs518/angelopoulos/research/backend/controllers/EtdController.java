@@ -1,111 +1,48 @@
 package edu.cs518.angelopoulos.research.backend.controllers;
 
+import com.google.firebase.auth.FirebaseToken;
+import edu.cs518.angelopoulos.research.backend.models.User;
+import edu.cs518.angelopoulos.research.backend.services.FirebaseAuthService;
+import edu.cs518.angelopoulos.research.backend.services.UserService;
+import edu.cs518.angelopoulos.research.common.models.EtdEntry;
 import edu.cs518.angelopoulos.research.common.models.EtdEntryMeta;
-import edu.cs518.angelopoulos.research.common.models.EtdEntryMetaSearchQuery;
 import edu.cs518.angelopoulos.research.common.services.EtdEntryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.data.elasticsearch.core.SearchPage;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.lang.NonNull;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 public class EtdController {
     private final EtdEntryService etdEntryService;
+    private final FirebaseAuthService firebaseAuthService;
+    private final UserService userService;
 
     Logger logger = LoggerFactory.getLogger(EtdController.class);
 
-    private final int PAGE_SIZE = 20;
-
     @Autowired
-    public EtdController(EtdEntryService etdEntryService) {
+    public EtdController(EtdEntryService etdEntryService, FirebaseAuthService firebaseAuthService, UserService userService) {
         this.etdEntryService = etdEntryService;
+        this.firebaseAuthService = firebaseAuthService;
+        this.userService = userService;
     }
 
     /**
-     * DTO for transferring user data.
-     */
-    public static class EtdEntryMetaSearchResponse {
-        public Integer totalPages;
-        public Integer resultsPerPage;
-        public Long totalResultsInPages;
-
-        public List<EtdEntryMeta> pageResults;
-    }
-
-    /**
-     * Searches an ETD entry by title.
+     * Returns the ETD entry metadata for the entry with the given ID.
      *
-     * @param title Title to search for
-     * @param pageNumber Index of the page to return
-     * @return Page of results and related metadata
+     * @param entryId ID of the ETD entry to get the metadata of.
+     * @return ETD entry metadata
      */
-    @GetMapping(path = "/public/etd/search")
-    public ResponseEntity<EtdEntryMetaSearchResponse> searchEtdByTitle(
-            @RequestParam(name = "t") String title,
-            @RequestParam(name = "p") Integer pageNumber) {
-        Page<EtdEntryMeta> etdEntryMetaPage = this.etdEntryService.findByTitle(title, pageNumber, PAGE_SIZE);
-
-        EtdEntryMetaSearchResponse etdEntryMetaSearchResponse = new EtdEntryMetaSearchResponse();
-        etdEntryMetaSearchResponse.pageResults = etdEntryMetaPage.toList();
-        etdEntryMetaSearchResponse.totalPages = etdEntryMetaPage.getTotalPages();
-        etdEntryMetaSearchResponse.resultsPerPage = PAGE_SIZE;
-        etdEntryMetaSearchResponse.totalResultsInPages = etdEntryMetaPage.getTotalElements();
-
-        return ResponseEntity.ok(etdEntryMetaSearchResponse);
-    }
-
-    /**
-     * Performs an advanced search for an ETD entry, searching for multiple fields.
-     *
-     * @param title Title
-     * @param subject Subject
-     * @param author Author
-     * @param department Department
-     * @param degreeGrantor Degree grantor (institute)
-     * @param publisher Publisher (institute)
-     * @param pageNumber Index of the page to return
-     * @return Page of results and related metadata
-     */
-    @GetMapping(path = "/public/etd/search-advanced")
-    public ResponseEntity<EtdEntryMetaSearchResponse> searchEtdEntryAdvanced(
-            @RequestParam(name = "t", required = false) String title,
-            @RequestParam(name = "tp", required = false) String type,
-            @RequestParam(name = "s", required = false) String subject,
-            @RequestParam(name = "a", required = false) String author,
-            @RequestParam(name = "d", required = false) String department,
-            @RequestParam(name = "dg", required = false) String degreeGrantor,
-            @RequestParam(name = "pb", required = false) String publisher,
-            @RequestParam(name = "p") Integer pageNumber) {
-        EtdEntryMetaSearchQuery query = new EtdEntryMetaSearchQuery(title, type, subject, author, department, degreeGrantor, publisher);
-
-        SearchPage<EtdEntryMeta> etdEntryMetaPage = etdEntryService.advancedSearch(query, pageNumber, PAGE_SIZE);
-
-        EtdEntryMetaSearchResponse etdEntryMetaSearchResponse = new EtdEntryMetaSearchResponse();
-        etdEntryMetaSearchResponse.pageResults = etdEntryMetaPage.getContent()
-                .stream().map(SearchHit::getContent).collect(Collectors.toList());
-        etdEntryMetaSearchResponse.totalPages = etdEntryMetaPage.getTotalPages();
-        etdEntryMetaSearchResponse.resultsPerPage = PAGE_SIZE;
-        etdEntryMetaSearchResponse.totalResultsInPages = etdEntryMetaPage.getTotalElements();
-
-        return ResponseEntity.ok(etdEntryMetaSearchResponse);
-    }
-
     @GetMapping(path = "/public/etd/{entryId}")
     public ResponseEntity<EtdEntryMeta> getEtdEntryMeta(@PathVariable Long entryId) {
         try {
@@ -116,6 +53,42 @@ public class EtdController {
         }
     }
 
+    /**
+     * Creates a new ETD entry with the specified metadata and ETD document file.
+     *
+     * @param etdEntryMeta    ETD entry metadata
+     * @param etdDocumentFile ETD document multipart file
+     * @return True if ETD entry was created, false otherwise
+     */
+    @PostMapping(path = "/private/etd/create", consumes = {"multipart/form-data"})
+    public ResponseEntity<String> createEtdEntry(
+            @RequestPart("metadata") @NonNull EtdEntryMeta etdEntryMeta,
+            @RequestPart("etdDocument") @NonNull MultipartFile etdDocumentFile) {
+        // Get user ID so it can be associated with the new ETD entry
+        final FirebaseToken userIdToken = firebaseAuthService.getUserIdToken();
+        final String userId = userIdToken.getUid();
+        User user = userService.getUserByFirebaseId(userId);
+
+        try {
+            EtdEntry createdEntry = etdEntryService.createEtdEntry(etdEntryMeta, etdDocumentFile, user.getId());
+            logger.info("Created new ETD entry with id {}.", createdEntry.getId());
+        } catch (EtdEntryService.EtdEntryValidationException e) {
+            logger.error("Failed to validate ETD entry.");
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Invalid ETD entry data.");
+        } catch (EtdEntryService.EtdEntryCreationException e) {
+            logger.error("Failed to create ETD entry.");
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Failed to create ETD entry.");
+        }
+
+        return ResponseEntity.ok("Created ETD entry.");
+    }
+
+    /**
+     * Downloads the ETD document for the ETD entry with the specified ID.
+     *
+     * @param entryId ID of the ETD entry to get the document from
+     * @return ETD document file data as stream
+     */
     @GetMapping(path = "/public/etd/{entryId}/download")
     public ResponseEntity<InputStreamResource> downloadEtdDocument(@PathVariable Long entryId) {
         try {
