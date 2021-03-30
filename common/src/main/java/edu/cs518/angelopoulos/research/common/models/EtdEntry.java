@@ -22,12 +22,17 @@ public class EtdEntry {
     @Getter @Setter
     private Long originalId;
 
+    @ManyToOne
     @Getter @Setter
-    private Long createdByUserId;
+    private User user;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @Getter @Setter
     private List<EtdDocument> documents;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @Getter @Setter
+    private List<EtdClaimComment> claimComments;
 
     @UpdateTimestamp
     @Getter

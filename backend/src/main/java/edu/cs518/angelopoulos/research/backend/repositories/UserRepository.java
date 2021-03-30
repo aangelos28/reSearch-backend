@@ -1,7 +1,7 @@
 package edu.cs518.angelopoulos.research.backend.repositories;
 
 import org.springframework.data.repository.CrudRepository;
-import edu.cs518.angelopoulos.research.backend.models.User;
+import edu.cs518.angelopoulos.research.common.models.User;
 
 public interface UserRepository extends CrudRepository<User, Long> {
     User findByFirebaseId(String firebaseId);

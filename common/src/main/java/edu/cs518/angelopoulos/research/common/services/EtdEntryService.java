@@ -1,9 +1,6 @@
 package edu.cs518.angelopoulos.research.common.services;
 
-import edu.cs518.angelopoulos.research.common.models.EtdEntryMeta;
-import edu.cs518.angelopoulos.research.common.models.EtdDocument;
-import edu.cs518.angelopoulos.research.common.models.EtdEntry;
-import edu.cs518.angelopoulos.research.common.models.EtdEntryMetaSearchQuery;
+import edu.cs518.angelopoulos.research.common.models.*;
 import edu.cs518.angelopoulos.research.common.repositories.EtdEntryMetaRepository;
 import edu.cs518.angelopoulos.research.common.repositories.EtdEntryRepository;
 import org.slf4j.Logger;
@@ -124,11 +121,11 @@ public class EtdEntryService {
      *
      * @param etdEntryMeta ETD entry metadata
      * @param etdDocumentFile ETD document file
-     * @param userId User ID to associate with the ETD entry
+     * @param user User to associate with the ETD entry
      * @throws EtdEntryCreationException If the ETD entry could not be created
      * @throws EtdEntryValidationException If the ETD entry metadata could not be validated
      */
-    public EtdEntry createEtdEntry(EtdEntryMeta etdEntryMeta, MultipartFile etdDocumentFile, Long userId) throws EtdEntryCreationException, EtdEntryValidationException {
+    public EtdEntry createEtdEntry(EtdEntryMeta etdEntryMeta, MultipartFile etdDocumentFile, User user) throws EtdEntryCreationException, EtdEntryValidationException {
         // Validate ETD entry metadata
         validateEtdEntryMeta(etdEntryMeta);
 
@@ -141,7 +138,7 @@ public class EtdEntryService {
         // Insert etd entry in database
         EtdEntry etdEntry = new EtdEntry();
         etdEntry = etdEntryRepository.save(etdEntry);
-        etdEntry.setCreatedByUserId(userId);
+        etdEntry.setUser(user);
 
         // Insert etd entry meta in ElasticSearch
         etdEntryMeta.setId(etdEntry.getId());

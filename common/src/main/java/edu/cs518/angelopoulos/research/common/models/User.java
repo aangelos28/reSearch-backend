@@ -1,4 +1,4 @@
-package edu.cs518.angelopoulos.research.backend.models;
+package edu.cs518.angelopoulos.research.common.models;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -7,6 +7,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
+import java.util.List;
 
 @Entity
 public class User {
@@ -21,6 +22,12 @@ public class User {
 
     @Getter @Setter
     private String fullName;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+    private List<EtdEntry> etdEntries;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+    private List<EtdClaimComment> etdClaimComments;
 
     @CreationTimestamp
     @Getter

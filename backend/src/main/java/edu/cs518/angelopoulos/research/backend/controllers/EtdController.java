@@ -1,7 +1,7 @@
 package edu.cs518.angelopoulos.research.backend.controllers;
 
 import com.google.firebase.auth.FirebaseToken;
-import edu.cs518.angelopoulos.research.backend.models.User;
+import edu.cs518.angelopoulos.research.common.models.User;
 import edu.cs518.angelopoulos.research.backend.services.FirebaseAuthService;
 import edu.cs518.angelopoulos.research.backend.services.UserService;
 import edu.cs518.angelopoulos.research.common.models.EtdEntry;
@@ -70,7 +70,7 @@ public class EtdController {
         User user = userService.getUserByFirebaseId(userId);
 
         try {
-            EtdEntry createdEntry = etdEntryService.createEtdEntry(etdEntryMeta, etdDocumentFile, user.getId());
+            EtdEntry createdEntry = etdEntryService.createEtdEntry(etdEntryMeta, etdDocumentFile, user);
             logger.info("Created new ETD entry with id {}.", createdEntry.getId());
         } catch (EtdEntryService.EtdEntryValidationException e) {
             logger.error("Failed to validate ETD entry.");
