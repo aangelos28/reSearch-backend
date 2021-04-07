@@ -7,6 +7,7 @@ import edu.cs518.angelopoulos.research.backend.services.UserService;
 import edu.cs518.angelopoulos.research.common.models.EtdEntry;
 import edu.cs518.angelopoulos.research.common.models.EtdEntryMeta;
 import edu.cs518.angelopoulos.research.common.services.EtdEntryService;
+import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 public class EtdController {
@@ -54,6 +56,22 @@ public class EtdController {
     }
 
     /**
+     * Gets all the metadata for the ETD entries created by the authenticated user.
+     *
+     * @return List of ETD entry meta objects belonging to the user
+     */
+    @GetMapping(path = "/private/etd/user/all")
+    public ResponseEntity<List<EtdEntryMeta>> getUserEtdEntries() {
+        final FirebaseToken userIdToken = firebaseAuthService.getUserIdToken();
+        final String userId = userIdToken.getUid();
+        User user = userService.getUserByFirebaseId(userId);
+
+        final List<EtdEntryMeta> userEtdEntryMetas = etdEntryService.getMetasForEtdEntries(user.getEtdEntries());
+
+        return ResponseEntity.ok(userEtdEntryMetas);
+    }
+
+    /**
      * Creates a new ETD entry with the specified metadata and ETD document file.
      *
      * @param etdEntryMeta    ETD entry metadata
@@ -81,6 +99,32 @@ public class EtdController {
         }
 
         return ResponseEntity.ok("Created ETD entry.");
+    }
+
+    /**
+     * Deletes an ETD entry with the specified ID.
+     *
+     * @param entryId ID of the ETD entry to delete
+     * @return True if entry was deleted, false otherwise
+     */
+    @DeleteMapping(path = "/private/etd/delete/{entryId}")
+    public ResponseEntity<?> deleteEtdEntry(@PathVariable Long entryId) {
+        final FirebaseToken userIdToken = firebaseAuthService.getUserIdToken();
+        final String userId = userIdToken.getUid();
+        User user = userService.getUserByFirebaseId(userId);
+
+        try {
+            EtdEntry etdEntry = etdEntryService.getEtdEntry(entryId);
+            if (etdEntry.getUser().equals(user)) {
+                logger.info("Deleted ETD entry with ID {}", entryId);
+                etdEntryService.deleteEtdEntry(entryId);
+                return ResponseEntity.ok().build();
+            }
+        } catch (EtdEntryService.EtdEntryNotFoundException e) {
+            logger.error("Failed to delete ETD entry with ID {}.", entryId);
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     /**

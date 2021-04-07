@@ -7,12 +7,15 @@ import org.springframework.data.elasticsearch.repository.ElasticsearchRepository
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface EtdEntryMetaRepository extends ElasticsearchRepository<EtdEntryMeta, Long>, EtdEntryMetaRepositoryCustom {
     @NonNull
     Optional<EtdEntryMeta> findById(@NonNull Long id);
+
+    List<EtdEntryMeta> findAllByIdIn(List<Long> ids);
 
     Page<EtdEntryMeta> findByTitle(String title, Pageable pageable);
 }

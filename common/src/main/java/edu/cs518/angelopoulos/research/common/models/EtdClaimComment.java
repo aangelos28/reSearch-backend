@@ -14,20 +14,22 @@ public class EtdClaimComment {
     @Getter @Setter
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @Getter @Setter
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @Getter @Setter
+    private EtdEntry etdEntry;
 
     @Column(nullable = false)
     @Enumerated(EnumType.ORDINAL)
     @Getter @Setter
-    private EtdClaimReproducable reproducable;
+    private EtdClaimReproducible reproducible;
 
-    @Column(nullable = false)
     @Getter @Setter
     private String proofSourceCodeUrl;
 
-    @Column(nullable = false)
     @Getter @Setter
     private String proofDatasetUrl;
 

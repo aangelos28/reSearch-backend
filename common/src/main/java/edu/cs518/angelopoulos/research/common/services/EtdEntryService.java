@@ -1,6 +1,7 @@
 package edu.cs518.angelopoulos.research.common.services;
 
 import edu.cs518.angelopoulos.research.common.models.*;
+import edu.cs518.angelopoulos.research.common.repositories.EtdDocumentRepository;
 import edu.cs518.angelopoulos.research.common.repositories.EtdEntryMetaRepository;
 import edu.cs518.angelopoulos.research.common.repositories.EtdEntryRepository;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -24,15 +26,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class EtdEntryService {
     private final EtdEntryRepository etdEntryRepository;
     private final EtdEntryMetaRepository etdEntryMetaRepository;
+    private final EtdDocumentRepository etdDocumentRepository;
 
     private final Path etdDocumentStore;
 
@@ -63,9 +64,11 @@ public class EtdEntryService {
 
     @Autowired
     public EtdEntryService(EtdEntryRepository etdEntryRepository, EtdEntryMetaRepository etdEntryMetaRepository,
+                           EtdDocumentRepository etdDocumentRepository,
                            @Value("${data.etd.documentstore}") String etdDocumentStore) {
         this.etdEntryRepository = etdEntryRepository;
         this.etdEntryMetaRepository = etdEntryMetaRepository;
+        this.etdDocumentRepository = etdDocumentRepository;
         this.etdDocumentStore = Paths.get(etdDocumentStore).toAbsolutePath().normalize();
     }
 
@@ -97,9 +100,9 @@ public class EtdEntryService {
     }
 
     /**
-     * Get ETD entry metadata with the specified id
+     * Gets ETD entry metadata with the specified id
      *
-     * @param entryId Id of the ETD entry
+     * @param entryId ID of the ETD entry
      * @return EtdEntryMeta metadata for ETD entry
      * @throws EtdEntryService.EtdEntryNotFoundException If ETD entry with the specified ID is not found
      */
@@ -117,6 +120,42 @@ public class EtdEntryService {
     }
 
     /**
+     * Gets the ETD entry with the specified id
+     *
+     * @param entryId ID of the ETD entry
+     * @return Etd entry data
+     * @throws EtdEntryService.EtdEntryNotFoundException If ETD entry with the specified ID is not found
+     */
+    public EtdEntry getEtdEntry(Long entryId) throws EtdEntryService.EtdEntryNotFoundException {
+        Optional<EtdEntry> etdEntryOptional = etdEntryRepository.findById(entryId);
+        EtdEntry etdEntry;
+
+        if (etdEntryOptional.isPresent()) {
+            etdEntry = etdEntryOptional.get();
+        } else {
+            throw new EtdEntryNotFoundException("Could not locate ETD entry with id " + entryId);
+        }
+
+        return etdEntry;
+    }
+
+    /**
+     * Returns the corresponding EtdEntryMeta objects for a list of EtdEntry objects.
+     *
+     * @param etdEntries List of ETD entries
+     * @return List of EtdEntryMeta objects
+     */
+    public List<EtdEntryMeta> getMetasForEtdEntries(final List<EtdEntry> etdEntries) {
+        List<Long> etdEntryIds = etdEntries.stream().map(EtdEntry::getId).collect(Collectors.toList());
+
+        if (etdEntryIds.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        return etdEntryMetaRepository.findAllByIdIn(etdEntryIds);
+    }
+
+    /**
      * Creates a new ETD entry with a specific ETD document.
      *
      * @param etdEntryMeta ETD entry metadata
@@ -125,6 +164,7 @@ public class EtdEntryService {
      * @throws EtdEntryCreationException If the ETD entry could not be created
      * @throws EtdEntryValidationException If the ETD entry metadata could not be validated
      */
+    @Transactional
     public EtdEntry createEtdEntry(EtdEntryMeta etdEntryMeta, MultipartFile etdDocumentFile, User user) throws EtdEntryCreationException, EtdEntryValidationException {
         // Validate ETD entry metadata
         validateEtdEntryMeta(etdEntryMeta);
@@ -137,12 +177,24 @@ public class EtdEntryService {
 
         // Insert etd entry in database
         EtdEntry etdEntry = new EtdEntry();
-        etdEntry = etdEntryRepository.save(etdEntry);
-        etdEntry.setUser(user);
+        try {
+            etdEntry.setUser(user);
+            etdEntry = etdEntryRepository.save(etdEntry);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new EtdEntryCreationException("Failed to create ETD entry in database.");
+        }
 
         // Insert etd entry meta in ElasticSearch
-        etdEntryMeta.setId(etdEntry.getId());
-        etdEntryMeta = etdEntryMetaRepository.save(etdEntryMeta);
+        try {
+            etdEntryMeta.setId(etdEntry.getId());
+            etdEntryMeta.setDateIssued(new Date());
+            etdEntryMeta = etdEntryMetaRepository.save(etdEntryMeta);
+        } catch (Exception e) {
+            e.printStackTrace();
+            etdEntryRepository.deleteById(etdEntry.getId());
+            throw new EtdEntryCreationException("Failed to create ETD entry meta in ElasticSearch.");
+        }
 
         // Create etd entry directory in etd store
         try {
@@ -158,34 +210,48 @@ public class EtdEntryService {
             Path filePath = Paths.get(cleanFileName);
             EtdDocument etdDocument = new EtdDocument();
             etdDocument.setFilename(filePath.getFileName().toString());
-
-            List<EtdDocument> etdDocumentList = new ArrayList<>();
-            etdDocumentList.add(etdDocument);
+            etdDocument.setEtdEntry(etdEntry);
 
             // Copy ETD document to directory
             try {
                 addFileToEtdEntryDirectory(etdEntry, etdDocumentFile, filePath);
             } catch (IOException e) {
                 // Delete ETD entry
-                etdEntryMetaRepository.delete(etdEntryMeta);
-                etdEntryRepository.delete(etdEntry);
+                etdEntryMetaRepository.deleteById(etdEntryMeta.getId());
+                etdEntryRepository.deleteById(etdEntry.getId());
                 deleteEtdEntryDirectory(etdEntry);
 
                 throw new EtdEntryCreationException("Failed to add file to ETD entry directory.");
             }
 
             // Finally, add ETD document to ETD entry in the database
-            etdEntry.setDocuments(etdDocumentList);
-            etdEntryRepository.save(etdEntry);
-        } catch (IOException e) {
+            etdDocumentRepository.save(etdDocument);
+        } catch (Exception e) {
             // Delete ETD entry
-            etdEntryMetaRepository.delete(etdEntryMeta);
-            etdEntryRepository.delete(etdEntry);
+            etdEntryMetaRepository.deleteById(etdEntryMeta.getId());
+            etdEntryRepository.deleteById(etdEntry.getId());
+
+            try {
+                deleteEtdEntryDirectory(etdEntry);
+            } catch (Exception ignored) { }
 
             throw new EtdEntryCreationException("Failed to create ETD entry directory.");
         }
 
         return etdEntry;
+    }
+
+    /**
+     * Deletes the ETD entry and metadata with the specified id.
+     *
+     * @param id ID of the ETD entry to delete
+     */
+    public void deleteEtdEntry(final Long id) {
+        // Delete entry from ElasticSearch
+        etdEntryRepository.deleteById(id);
+
+        // Delete entry from database
+        etdEntryMetaRepository.deleteById(id);
     }
 
     /**
@@ -212,9 +278,6 @@ public class EtdEntryService {
         }
         if (etdEntryMeta.getDescriptionAbstract() == null || etdEntryMeta.getDescriptionAbstract().trim().isEmpty()) {
             throw new EtdEntryValidationException("Failed to create ETD entry. Abstract is null or empty.");
-        }
-        if (etdEntryMeta.getDateIssued() == null) {
-            throw new EtdEntryValidationException("Failed to create ETD entry. Date issued is null.");
         }
     }
 
@@ -266,9 +329,10 @@ public class EtdEntryService {
         // Create the directory for the ETD entry
         try {
             etdEntry = etdEntryRepository.save(etdEntry);
+            etdDocument.setEtdEntry(etdEntry);
+            etdDocumentRepository.save(etdDocument);
 
             mapEtdEntryDirectory(etdEntryMeta, etdEntry);
-            etdEntry.getDocuments().add(etdDocument);
             etdEntryRepository.save(etdEntry);
         } catch (IOException e) {
             e.printStackTrace();
