@@ -47,10 +47,13 @@ public class EtdEntryMeta {
     @JsonProperty("contributor_author")
     private String contributorAuthor;
 
-    @JsonProperty("contributor_committee_chair")
-    private String contributorCommitteeChair;
+    @JsonProperty("contributor_committeechair")
+    private List<String> contributorCommitteeChair;
 
-    @JsonProperty("contributor_committee_member")
+    @JsonProperty("contributor_committeecochair")
+    private List<String> contributorCommitteeCoChair;
+
+    @JsonProperty("contributor_committeemember")
     private List<String> contributorCommitteeMember;
 
     @Field(type = FieldType.Text)
@@ -166,16 +169,25 @@ public class EtdEntryMeta {
         this.contributorAuthor = contributorAuthor;
     }
 
-    @JsonGetter("contributor_committee_chair")
-    public String getContributorCommitteeChair() {
+    @JsonGetter("contributor_committeechair")
+    public List<String>  getContributorCommitteeChair() {
         return contributorCommitteeChair;
     }
 
-    public void setContributorCommitteeChair(String contributorCommitteeChair) {
+    public void setContributorCommitteeChair(List<String>  contributorCommitteeChair) {
         this.contributorCommitteeChair = contributorCommitteeChair;
     }
 
-    @JsonGetter("contributor_committee_member")
+    @JsonGetter("contributor_committeecochair")
+    public List<String>  getContributorCommitteeCoChair() {
+        return contributorCommitteeCoChair;
+    }
+
+    public void setContributorCommitteeCoChair(List<String> contributorCommitteeCoChair) {
+        this.contributorCommitteeCoChair = contributorCommitteeCoChair;
+    }
+
+    @JsonGetter("contributor_committeemember")
     public List<String> getContributorCommitteeMember() {
         return contributorCommitteeMember;
     }

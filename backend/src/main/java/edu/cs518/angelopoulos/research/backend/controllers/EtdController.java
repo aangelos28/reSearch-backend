@@ -7,7 +7,6 @@ import edu.cs518.angelopoulos.research.backend.services.UserService;
 import edu.cs518.angelopoulos.research.common.models.EtdEntry;
 import edu.cs518.angelopoulos.research.common.models.EtdEntryMeta;
 import edu.cs518.angelopoulos.research.common.services.EtdEntryService;
-import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +78,7 @@ public class EtdController {
      * @return True if ETD entry was created, false otherwise
      */
     @PostMapping(path = "/private/etd/create", consumes = {"multipart/form-data"})
-    public ResponseEntity<String> createEtdEntry(
+    public ResponseEntity<?> createEtdEntry(
             @RequestPart("metadata") @NonNull EtdEntryMeta etdEntryMeta,
             @RequestPart("etdDocument") @NonNull MultipartFile etdDocumentFile) {
         // Get user ID so it can be associated with the new ETD entry
@@ -98,7 +97,7 @@ public class EtdController {
             return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Failed to create ETD entry.");
         }
 
-        return ResponseEntity.ok("Created ETD entry.");
+        return ResponseEntity.ok().build();
     }
 
     /**
