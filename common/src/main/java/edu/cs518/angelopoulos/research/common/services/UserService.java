@@ -1,7 +1,8 @@
-package edu.cs518.angelopoulos.research.backend.services;
+package edu.cs518.angelopoulos.research.common.services;
 
+import edu.cs518.angelopoulos.research.common.models.EtdEntry;
 import edu.cs518.angelopoulos.research.common.models.User;
-import edu.cs518.angelopoulos.research.backend.repositories.UserRepository;
+import edu.cs518.angelopoulos.research.common.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

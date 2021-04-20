@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -46,6 +47,17 @@ public class EtdInserterService {
         File[] entryDirectories = etdStoreDirectory.listFiles(File::isDirectory);
         assert entryDirectories != null;
 
+        // Sort directories numerically
+        Arrays.sort(entryDirectories, (f1, f2) -> {
+            try {
+                int i1 = Integer.parseInt(f1.getName());
+                int i2 = Integer.parseInt(f2.getName());
+                return i1 - i2;
+            } catch (NumberFormatException e) {
+                throw new AssertionError(e);
+            }
+        });
+
         System.out.printf("Number of ETD entries to insert: %d\n", entryDirectories.length);
 
         // Use a buffer for bulk inserting entries to ElasticSearch
@@ -70,7 +82,7 @@ public class EtdInserterService {
             EtdEntryMeta etdEntryMeta = mapper.readValue(jsonFiles[0], EtdEntryMeta.class);
 
             // Create entry in ETD store and database
-            EtdEntry etdEntry = this.etdEntryService.insertEtdEntryFromDisk(etdEntryMeta, pdfFiles);
+            EtdEntry etdEntry = this.etdEntryService.insertEtdEntryFromDisk(etdEntryMeta, entryDirectory, pdfFiles);
             etdEntryMeta.setId(etdEntry.getId());
 
             // Add entry to ES buffer to bulk insert later

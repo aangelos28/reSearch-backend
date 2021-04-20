@@ -1,4 +1,4 @@
-package edu.cs518.angelopoulos.research.backend.repositories;
+package edu.cs518.angelopoulos.research.common.repositories;
 
 import org.springframework.data.repository.CrudRepository;
 import edu.cs518.angelopoulos.research.common.models.User;

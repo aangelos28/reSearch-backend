@@ -19,9 +19,6 @@ public class EtdEntry {
     @Getter @Setter
     private Long id;
 
-    @Getter @Setter
-    private Long originalId;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @Getter @Setter
     private User user;
@@ -43,12 +40,11 @@ public class EtdEntry {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         EtdEntry etdEntry = (EtdEntry) o;
-        return Objects.equals(id, etdEntry.id) && Objects.equals(originalId, etdEntry.originalId) && Objects.equals(user, etdEntry.user) && Objects.equals(documents, etdEntry.documents) && Objects.equals(claimComments, etdEntry.claimComments) && Objects.equals(updatedAt, etdEntry.updatedAt);
+        return Objects.equals(id, etdEntry.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, originalId, user, documents, claimComments, updatedAt);
+        return Objects.hash(id);
     }
 }
-

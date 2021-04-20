@@ -15,8 +15,4 @@ public interface EtdEntryRepository extends CrudRepository<EtdEntry, Long> {
 
     boolean existsById(@NonNull Long id);
     void deleteById(@NonNull Long id);
-
-    EtdEntry findByOriginalId(Long id);
-    boolean existsByOriginalId(Long id);
-    void deleteByOriginalId(Long id);
 }

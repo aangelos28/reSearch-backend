@@ -318,9 +318,8 @@ public class EtdEntryService {
      * @param pdfFiles Array of PDF file handles
      * @return EtdEntry object that was inserted in the database
      */
-    public EtdEntry insertEtdEntryFromDisk(EtdEntryMeta etdEntryMeta, File[] pdfFiles) {
+    public EtdEntry insertEtdEntryFromDisk(EtdEntryMeta etdEntryMeta, File sourceDirectory, File[] pdfFiles) {
         EtdEntry etdEntry = new EtdEntry();
-        etdEntry.setOriginalId(etdEntryMeta.getOriginalId());
 
         // Note for now we only add the first pdf file
         EtdDocument etdDocument = new EtdDocument();
@@ -332,7 +331,7 @@ public class EtdEntryService {
             etdDocument.setEtdEntry(etdEntry);
             etdDocumentRepository.save(etdDocument);
 
-            mapEtdEntryDirectory(etdEntryMeta, etdEntry);
+            mapEtdEntryDirectory(etdEntryMeta, sourceDirectory, etdEntry);
             etdEntryRepository.save(etdEntry);
         } catch (IOException e) {
             e.printStackTrace();
@@ -346,19 +345,17 @@ public class EtdEntryService {
         return etdDocumentStore.resolve(etdEntry.getId().toString());
     }
 
-    private Path getOriginalEtdEntryPath(EtdEntryMeta etdEntryMeta) {
-        return etdDocumentStore.resolve(etdEntryMeta.getOriginalId().toString());
-    }
-
     private Path getEtdDocumentPath(EtdEntry etdEntry, EtdDocument etdDocument) {
         return getEtdEntryPath(etdEntry).resolve(etdDocument.getFilename());
     }
 
-    private void mapEtdEntryDirectory(EtdEntryMeta etdEntryMeta, EtdEntry etdEntry) throws IOException {
-        Path originalEntryPath = getOriginalEtdEntryPath(etdEntryMeta);
+    private void mapEtdEntryDirectory(EtdEntryMeta etdEntryMeta, File sourceDir, EtdEntry etdEntry) throws IOException {
+        Path originalEntryPath = sourceDir.toPath();
         Path destEntryPath = getEtdEntryPath(etdEntry);
 
-        Files.move(originalEntryPath, destEntryPath);
+        if (!originalEntryPath.equals(destEntryPath)) {
+            Files.move(originalEntryPath, destEntryPath);
+        }
 
         etdEntry.setDocuments(new ArrayList<>());
     }

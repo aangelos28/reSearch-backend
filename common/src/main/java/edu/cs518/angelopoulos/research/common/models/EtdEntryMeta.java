@@ -21,11 +21,6 @@ public class EtdEntryMeta {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    // Handle
-    @Field(type = FieldType.Long)
-    @JsonProperty("handle")
-    private Long originalId;
-
     ///////////////////////////////////////////////////////////
 
     @Field(type = FieldType.Text)
@@ -113,15 +108,6 @@ public class EtdEntryMeta {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    @JsonGetter("handle")
-    public Long getOriginalId() {
-        return originalId;
-    }
-
-    public void setOriginalId(Long originalId) {
-        this.originalId = originalId;
     }
 
     @JsonGetter("title")

@@ -26,11 +26,23 @@ public class User {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
     @Getter
-    private List<EtdEntry> etdEntries;
+    private List<EtdEntry> createdEtdEntries;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @Getter
+    private List<EtdEntry> favoriteEtdEntries;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
     @Getter
     private List<EtdClaimComment> etdClaimComments;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "usersLiked")
+    @Getter
+    private List<EtdClaimComment> likedEtdClaimComments;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "usersDisliked")
+    @Getter
+    private List<EtdClaimComment> dislikedEtdClaimComments;
 
     @CreationTimestamp
     @Getter
@@ -53,11 +65,11 @@ public class User {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         User user = (User) o;
-        return id.equals(user.id) && firebaseId.equals(user.firebaseId) && Objects.equals(fullName, user.fullName) && Objects.equals(etdEntries, user.etdEntries) && Objects.equals(etdClaimComments, user.etdClaimComments) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
+        return id.equals(user.id) && firebaseId.equals(user.firebaseId) && Objects.equals(fullName, user.fullName) && Objects.equals(createdEtdEntries, user.createdEtdEntries) && Objects.equals(etdClaimComments, user.etdClaimComments) && Objects.equals(createdAt, user.createdAt) && Objects.equals(updatedAt, user.updatedAt);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, firebaseId, fullName, etdEntries, etdClaimComments, createdAt, updatedAt);
+        return Objects.hash(id, firebaseId, fullName, createdEtdEntries, etdClaimComments, createdAt, updatedAt);
     }
 }

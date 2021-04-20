@@ -3,7 +3,7 @@ package edu.cs518.angelopoulos.research.backend.controllers;
 import com.google.firebase.auth.FirebaseToken;
 import edu.cs518.angelopoulos.research.common.models.User;
 import edu.cs518.angelopoulos.research.backend.services.FirebaseAuthService;
-import edu.cs518.angelopoulos.research.backend.services.UserService;
+import edu.cs518.angelopoulos.research.common.services.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
