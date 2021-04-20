@@ -2,6 +2,7 @@ package edu.cs518.angelopoulos.research.backend.controllers;
 
 import com.google.firebase.auth.FirebaseToken;
 import edu.cs518.angelopoulos.research.backend.services.FirebaseAuthService;
+import edu.cs518.angelopoulos.research.common.models.EtdClaimCommentLikeStatus;
 import edu.cs518.angelopoulos.research.common.services.UserService;
 import edu.cs518.angelopoulos.research.common.models.EtdClaimComment;
 import edu.cs518.angelopoulos.research.common.models.EtdClaimReproducible;
@@ -15,14 +16,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Controller
+@RestController
 public class EtdClaimCommentController {
     private final EtdClaimCommentService etdClaimCommentService;
     private final UserService userService;
@@ -49,6 +49,7 @@ public class EtdClaimCommentController {
         public String proofSourceCodeUrl;
         public String proofDatasetUrl;
         public String results;
+        public Long likes;
         public Date createdAt;
     }
 
@@ -65,7 +66,8 @@ public class EtdClaimCommentController {
             final List<EtdClaimCommentDto> entryCommentDtos = entryComments.stream()
                     .map(c -> new EtdClaimCommentDto(c.getId(), c.getUser().getFirebaseId(), c.getUser().getFullName(),
                             c.getClaim(), c.getReproducible().getValue(),
-                            c.getProofSourceCodeUrl(), c.getProofDatasetUrl(), c.getResults(), new Date(c.getCreatedAt().getTime())))
+                            c.getProofSourceCodeUrl(), c.getProofDatasetUrl(), c.getResults(), c.getLikes(),
+                            new Date(c.getCreatedAt().getTime())))
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(entryCommentDtos);
@@ -92,6 +94,7 @@ public class EtdClaimCommentController {
         comment.setProofSourceCodeUrl(commentDto.proofSourceCodeUrl);
         comment.setProofDatasetUrl(commentDto.proofDatasetUrl);
         comment.setResults(commentDto.results);
+        comment.setLikes(0L);
 
         switch (commentDto.reproducible) {
             case 0:
@@ -110,12 +113,43 @@ public class EtdClaimCommentController {
                     addedComment.getUser().getFirebaseId(), addedComment.getUser().getFullName(),
                     addedComment.getClaim(), addedComment.getReproducible().getValue(),
                     addedComment.getProofSourceCodeUrl(), addedComment.getProofDatasetUrl(),
-                    addedComment.getResults(), new Date(addedComment.getCreatedAt().getTime()));
+                    addedComment.getResults(), addedComment.getLikes(), new Date(addedComment.getCreatedAt().getTime()));
 
             return ResponseEntity.ok(addedCommentDto);
         } catch (EtdEntryService.EtdEntryNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Could not find ETD entry with ID " + entryId);
         }
+    }
+
+    @GetMapping(path = "/public/etd/comment/likes")
+    public ResponseEntity<?> getCommentLikes(@RequestParam(name = "i") List<Long> commentIds) {
+        final List<EtdClaimComment> comments = this.etdClaimCommentService.getComments(commentIds);
+
+        if (comments.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        final List<Long> commentLikes = this.etdClaimCommentService.getCommentLikes(comments);
+
+        return ResponseEntity.ok(commentLikes);
+    }
+
+    @GetMapping(path = "/private/etd/comment/like-statuses")
+    public ResponseEntity<?> getCommentLikeStatuses(@RequestParam(name = "i") List<Long> commentIds) {
+        final FirebaseToken userIdToken = firebaseAuthService.getUserIdToken();
+        final String userId = userIdToken.getUid();
+        User user = userService.getUserByFirebaseId(userId);
+
+        final List<EtdClaimComment> comments = this.etdClaimCommentService.getComments(commentIds);
+
+        if (comments.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        final List<EtdClaimCommentLikeStatus> commentLikeStatuses =
+                this.etdClaimCommentService.getCommentLikeStatuses(user, comments);
+
+        return ResponseEntity.ok(commentLikeStatuses);
     }
 
     @PutMapping(path = "/private/etd/comment/{commentId}/like")
@@ -134,6 +168,22 @@ public class EtdClaimCommentController {
         }
     }
 
+    @PutMapping(path = "/private/etd/comment/{commentId}/unlike")
+    public ResponseEntity<?> unlikeComment(@PathVariable Long commentId) {
+        final FirebaseToken userIdToken = firebaseAuthService.getUserIdToken();
+        final String userId = userIdToken.getUid();
+        User user = userService.getUserByFirebaseId(userId);
+
+        try {
+            this.etdClaimCommentService.removeCommentLike(user, commentId);
+            return ResponseEntity.ok().build();
+        } catch (EtdClaimCommentService.EtdClaimNotLikedException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (EtdClaimCommentService.EtdClaimCommentNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
     @PutMapping(path = "/private/etd/comment/{commentId}/dislike")
     public ResponseEntity<?> dislikeComment(@PathVariable Long commentId) {
         final FirebaseToken userIdToken = firebaseAuthService.getUserIdToken();
@@ -144,6 +194,22 @@ public class EtdClaimCommentController {
             this.etdClaimCommentService.dislikeComment(user, commentId);
             return ResponseEntity.ok().build();
         } catch (EtdClaimCommentService.EtdClaimAlreadyDislikedException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        } catch (EtdClaimCommentService.EtdClaimCommentNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
+
+    @PutMapping(path = "/private/etd/comment/{commentId}/undislike")
+    public ResponseEntity<?> undislikeComment(@PathVariable Long commentId) {
+        final FirebaseToken userIdToken = firebaseAuthService.getUserIdToken();
+        final String userId = userIdToken.getUid();
+        User user = userService.getUserByFirebaseId(userId);
+
+        try {
+            this.etdClaimCommentService.removeCommentDislike(user, commentId);
+            return ResponseEntity.ok().build();
+        } catch (EtdClaimCommentService.EtdClaimNotDislikedException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         } catch (EtdClaimCommentService.EtdClaimCommentNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();

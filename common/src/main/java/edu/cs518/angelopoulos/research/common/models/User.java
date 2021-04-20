@@ -36,11 +36,11 @@ public class User {
     @Getter
     private List<EtdClaimComment> etdClaimComments;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "usersLiked")
+    @ManyToMany(fetch = FetchType.LAZY)
     @Getter
     private List<EtdClaimComment> likedEtdClaimComments;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "usersDisliked")
+    @ManyToMany(fetch = FetchType.LAZY)
     @Getter
     private List<EtdClaimComment> dislikedEtdClaimComments;
 
