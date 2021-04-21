@@ -86,7 +86,7 @@ public class EtdInserterService {
                 EtdEntry etdEntry = this.etdEntryService.insertEtdEntryFromDisk(etdEntryMeta, entryDirectory, pdfFiles);
                 etdEntryMeta.setId(etdEntry.getId());
             } else {
-                etdEntryMeta.setId((long) entriesInserted);
+                etdEntryMeta.setId((long) entriesInserted + 1);
             }
 
             // Add entry to ES buffer to bulk insert later
