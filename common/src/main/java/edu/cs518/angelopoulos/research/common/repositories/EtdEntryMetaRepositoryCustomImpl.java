@@ -2,6 +2,7 @@ package edu.cs518.angelopoulos.research.common.repositories;
 
 import edu.cs518.angelopoulos.research.common.models.EtdEntryMeta;
 import edu.cs518.angelopoulos.research.common.models.EtdEntryMetaSearchQuery;
+import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,25 @@ public class EtdEntryMetaRepositoryCustomImpl implements EtdEntryMetaRepositoryC
     }
 
     /**
-     * Performs an advances search, matching all queried fields.
+     * Performs a simple search by title.
+     *
+     * @param title Title
+     * @param pageable Pageable
+     * @return Page with EtdEntryMeta results.
+     */
+    @Override
+    public SearchPage<EtdEntryMeta> simpleSearch(String title, Pageable pageable) {
+        NativeSearchQueryBuilder searchQueryBuilder = new NativeSearchQueryBuilder();
+        searchQueryBuilder.withQuery(QueryBuilders.matchQuery("title", title).fuzziness(Fuzziness.ONE).prefixLength(1));
+
+        NativeSearchQuery searchQuery = searchQueryBuilder.build();
+
+        SearchHits<EtdEntryMeta> searchHits = elasticsearch.search(searchQuery, EtdEntryMeta.class, IndexCoordinates.of("etd_entries"));
+        return SearchHitSupport.searchPageFor(searchHits, pageable);
+    }
+
+    /**
+     * Performs an advanced search, matching all queried fields.
      *
      * @param query Query
      * @param pageable Pageable
@@ -36,7 +55,7 @@ public class EtdEntryMetaRepositoryCustomImpl implements EtdEntryMetaRepositoryC
         BoolQueryBuilder matchAllQuery = QueryBuilders.boolQuery();
 
         if (query.getTitle() != null) {
-            matchAllQuery.must(QueryBuilders.matchQuery("title", query.getTitle()));
+            matchAllQuery.must(QueryBuilders.matchQuery("title", query.getTitle()).fuzziness(Fuzziness.ONE).prefixLength(1));
         }
         if (query.getType() != null) {
             matchAllQuery.must(QueryBuilders.matchQuery("type", query.getType()));

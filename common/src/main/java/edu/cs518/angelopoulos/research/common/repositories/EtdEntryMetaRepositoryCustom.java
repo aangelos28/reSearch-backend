@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EtdEntryMetaRepositoryCustom {
-    // TODO implement
+    SearchPage<EtdEntryMeta> simpleSearch(final String title, Pageable pageable);
     SearchPage<EtdEntryMeta> advancedSearch(EtdEntryMetaSearchQuery query, Pageable pageable);
 }

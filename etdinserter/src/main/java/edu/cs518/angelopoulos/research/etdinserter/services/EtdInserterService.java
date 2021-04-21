@@ -32,7 +32,7 @@ public class EtdInserterService {
         this.etdDocumentStore = etdDocumentStore;
     }
 
-    public void insertFromDirectory(String directoryPath, boolean copyToStore) throws IOException {
+    public void insertFromDirectory(String directoryPath, boolean copyToStore, boolean indexOnly) throws IOException {
         System.out.printf("Scanning '%s' for ETD entries...\n", directoryPath);
 
         // Note: this can take time
@@ -82,8 +82,12 @@ public class EtdInserterService {
             EtdEntryMeta etdEntryMeta = mapper.readValue(jsonFiles[0], EtdEntryMeta.class);
 
             // Create entry in ETD store and database
-            EtdEntry etdEntry = this.etdEntryService.insertEtdEntryFromDisk(etdEntryMeta, entryDirectory, pdfFiles);
-            etdEntryMeta.setId(etdEntry.getId());
+            if (!indexOnly) {
+                EtdEntry etdEntry = this.etdEntryService.insertEtdEntryFromDisk(etdEntryMeta, entryDirectory, pdfFiles);
+                etdEntryMeta.setId(etdEntry.getId());
+            } else {
+                etdEntryMeta.setId((long) entriesInserted);
+            }
 
             // Add entry to ES buffer to bulk insert later
             etdEntryMetaBuffer.add(etdEntryMeta);

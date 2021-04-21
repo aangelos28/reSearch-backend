@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.elasticsearch.core.SearchPage;
@@ -80,9 +79,9 @@ public class EtdEntryService {
      * @param pageSize Size of the page to return
      * @return Page of EtdEntryMeta results that match the given title
      */
-    public Page<EtdEntryMeta> findByTitle(String title, Integer page, Integer pageSize) {
+    public SearchPage<EtdEntryMeta> findByTitle(String title, Integer page, Integer pageSize) {
         Pageable pageable = PageRequest.of(page, pageSize);
-        return this.etdEntryMetaRepository.findByTitle(title, pageable);
+        return this.etdEntryMetaRepository.simpleSearch(title, pageable);
     }
 
     /**

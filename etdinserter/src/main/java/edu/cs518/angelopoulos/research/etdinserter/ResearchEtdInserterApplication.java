@@ -2,6 +2,7 @@ package edu.cs518.angelopoulos.research.etdinserter;
 
 import edu.cs518.angelopoulos.research.etdinserter.services.EtdInserterService;
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -37,7 +38,10 @@ public class ResearchEtdInserterApplication {
 
         // Insert ETD entries to databases
         EtdInserterService etdInserterService = context.getBean(EtdInserterService.class);
-        etdInserterService.insertFromDirectory(cliArgs.getString("directory"), false);
+        if (cliArgs.getBoolean("index_only")) {
+            System.out.println("Only indexing data...");
+        }
+        etdInserterService.insertFromDirectory(cliArgs.getString("directory"), false, cliArgs.getBoolean("index_only"));
         System.exit(0);
     }
 
@@ -47,9 +51,11 @@ public class ResearchEtdInserterApplication {
                 .description("Scans a directory for EDT documents and inserts them in MySQL and ElasticSearch");
 
         parser.addArgument("-d", "--directory").required(true).type(String.class).help("Root of directory containing ETD documents.");
+        parser.addArgument("--index-only").required(false).action(Arguments.storeTrue()).help("Whether to only index metadata. Data must already be inserted in the database, however.");
 
         try {
             cliArgs = parser.parseArgs(args);
+            System.out.println(cliArgs.toString());
         } catch (ArgumentParserException e) {
             parser.handleError(e);
             System.exit(1);

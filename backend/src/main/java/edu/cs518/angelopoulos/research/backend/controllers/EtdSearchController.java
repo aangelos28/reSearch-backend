@@ -6,7 +6,6 @@ import edu.cs518.angelopoulos.research.common.services.EtdEntryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchPage;
 import org.springframework.http.ResponseEntity;
@@ -52,10 +51,11 @@ public class EtdSearchController {
     public ResponseEntity<EtdEntryMetaSearchResponse> searchEtdByTitle(
             @RequestParam(name = "t") String title,
             @RequestParam(name = "p") Integer pageNumber) {
-        Page<EtdEntryMeta> etdEntryMetaPage = this.etdEntryService.findByTitle(title, pageNumber, PAGE_SIZE);
+        SearchPage<EtdEntryMeta> etdEntryMetaPage = this.etdEntryService.findByTitle(title, pageNumber, PAGE_SIZE);
 
         EtdEntryMetaSearchResponse etdEntryMetaSearchResponse = new EtdEntryMetaSearchResponse();
-        etdEntryMetaSearchResponse.pageResults = etdEntryMetaPage.toList();
+        etdEntryMetaSearchResponse.pageResults = etdEntryMetaPage.getContent()
+                .stream().map(SearchHit::getContent).collect(Collectors.toList());
         etdEntryMetaSearchResponse.totalPages = etdEntryMetaPage.getTotalPages();
         etdEntryMetaSearchResponse.resultsPerPage = PAGE_SIZE;
         etdEntryMetaSearchResponse.totalResultsInPages = etdEntryMetaPage.getTotalElements();
